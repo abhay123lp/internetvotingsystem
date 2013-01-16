@@ -1,0 +1,31 @@
+A) SERWER
+
+zeby skorzystac z mechanizmu ssl oto minimum ktore trzeba wykonac aby moc uzyc ustawien domyslnych. Gniazdo serwera bedzie szukac pary kluczy w magazynie - trzeba mu ja podac. Mozliwosci sa dwie:
+
+1) modyfikujac zmienne systemowe w kodzie programu np jak tutaj:
+
+System.setProperty("javax.net.ssl.keyStore", "..\\..\\..\\System\\SSLKeys\\MojMagazyn");
+System.setProperty("javax.net.ssl.keyStorePassword", "123456");
+
+2) podajac zmienne systemowe przy uruchamianiu programu np jak tutaj:
+
+-Djavax.net.ssl.keyStore=..\\..\\..\\mySrvKeystore -D...
+
+UWAGA: Trzeba brac pod uwage ze w obu przypadkach katalogi robocze moga sie roznic co moze prowadzic do nieznalezienia magazynu i bledu podczas proby uzycia gniazd.
+
+B) KLIENT
+
+klient potrzebuje bazy certyfikatow ktorym moze zaufac. W naszym przypadku jest to samopodpisujacy sie certyfikat ktory jest w tle generowany z pary kluczy. Program traktuje go jakby byl wystawiony przez urzad wystawiajacy certyfikaty.
+
+Podobnie jak wyzej mamy mozliwosci:
+
+1) wewnatrz programu:
+
+System.setProperty("javax.net.ssl.trustStore", "..\\..\\..\\System\\SSLKeys\\MojMagazyn");
+System.setProperty("javax.net.ssl.trustStorePassword", "123456");
+
+2) podczas jego uruchamiania
+java -Djavax.net.ssl.trustStore=..\\..\\..\\System\\SSLKeys\\MojMagazyn -Djavax.net.ssl.trustStorePassword=123456 KlasaProgramu
+
+Trzeba jednak liczyc sie z tym ze w obu przypadkach inny bedzie domyslny katalog roboczy dla tego nie nalezy powyzszych sciezek brac jako wykladni!!
+
