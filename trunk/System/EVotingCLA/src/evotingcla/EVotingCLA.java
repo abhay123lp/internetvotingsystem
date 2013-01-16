@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package evotingcla;
 
 import evotingcommon.EVotingCommon;
@@ -17,17 +13,19 @@ import java.util.List;
 import javax.net.ServerSocketFactory;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocket;
 
-/**
- *
- * @author Maciek
- */
 public class EVotingCLA extends Thread {
 
-    /**
-     * @param args the command line arguments
-     */
     public static void main(String[] args) {
+        
+        //ustawienie zmiennych srodowiskowych dla implementacji javowej protokolu ssl
+        
+        System.setProperty("javax.net.ssl.keyStore", EVotingCommon.SSLKeyAndCertStorageDir + "/CLAKeyStore");
+        System.setProperty("javax.net.ssl.keyStorePassword", "123456");
+        
+        //
+        
         ServerSocketFactory socketFactory = SSLServerSocketFactory.getDefault();
         ServerSocket serverSocket;
 
@@ -41,15 +39,16 @@ public class EVotingCLA extends Thread {
         System.out.println("Debug");
         while (true) {
             try {
-                new EVotingCLA(serverSocket.accept()).start();
+                new EVotingCLA((SSLSocket)serverSocket.accept()).start();
             } catch (IOException e) {
                 System.err.println("BŁĄD: Nieudane połączenie z klientem...\n");
             }
         }
     }
-    private Socket socket;
+    
+    private SSLSocket socket;
 
-    public EVotingCLA(Socket socket) {
+    public EVotingCLA(SSLSocket socket) {
         this.socket = socket;
     }
 

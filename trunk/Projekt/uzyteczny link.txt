@@ -1,1 +1,3 @@
 http://stilius.net/java/java_ssl.php
+http://fusesource.com/docs/broker/5.3/security/SSL-SysProps.html
+http://www.coderanch.com/t/561288/Security/javax-net-ssl-keyStore-javax

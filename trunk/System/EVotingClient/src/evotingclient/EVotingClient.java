@@ -1,37 +1,40 @@
 package evotingclient;
 
-import com.sun.xml.internal.ws.resources.SoapMessages;
+//import com.sun.xml.internal.ws.resources.SoapMessages;
 import evotingcommon.EVotingCommon;
 import evotingcommon.RequestMessage;
 import evotingcommon.ResponseMessage;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.InputMismatchException;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
 public class EVotingClient {
-    //http://docs.oracle.com/javase/1.5.0/docs/api/javax/net/ssl/SSLSocket.html
-    //http://docs.oracle.com/javase/1.5.0/docs/api/javax/net/ssl/SSLServerSocket.html
-    //http://docs.oracle.com/javase/1.5.0/docs/api/javax/net/ssl/SSLSocketFactory.html
-    //http://docs.oracle.com/javase/1.5.0/docs/api/javax/net/ssl/SSLContext.html
 
     private final static String votingSiteAddress = "http://www.ii.uj.edu.pl/~ziarkows/voting";
     private static SSLSocket socket;
-    private static int CLA_VALIDATION_REQ = 0, CTF_CANDIDATES_REQ = 0, CTF_VOTE_REQ = 1, CLA_OK_RESP = 0, CLA_WRONG_DATA_RESP = 1, CLA_SERVER_ERROR_RESP = 2,
-            CTF_OK_RESP = 0, CTF_VALIDATION_INCORRECT_RESP = 1, CTF_VALIDATION_USED_RESP = 2, CTF_ID_USED_RESP = 3, CTF_SERVER_ERROR_RESP = 4;
+    private static int CLA_VALIDATION_REQ = 0, 
+            CTF_CANDIDATES_REQ = 0, 
+            CTF_VOTE_REQ = 1, 
+            CLA_OK_RESP = 0, 
+            CLA_WRONG_DATA_RESP = 1, 
+            CLA_SERVER_ERROR_RESP = 2,
+            CTF_OK_RESP = 0, 
+            CTF_VALIDATION_INCORRECT_RESP = 1, 
+            CTF_VALIDATION_USED_RESP = 2, 
+            CTF_ID_USED_RESP = 3, 
+            CTF_SERVER_ERROR_RESP = 4;
 
-//    boolean loggedToL;
-//    boolean loggedToT;
-//    public EVotingClient() {
-//        ssoc = null;
-//        loggedToL = false;
-//        loggedToT = false;
-//    }
     public static void main(String[] args) {
+        
+        //ustawienie zmiennych srodowiskowych dla implementacji javowej protokolu ssl
+        
+        System.setProperty("javax.net.ssl.trustStore", EVotingCommon.SSLKeyAndCertStorageDir + "/VotComCertMag");
+        System.setProperty("javax.net.ssl.trustStorePassword", "123456");
+        
+        //
+        
         Scanner keyboardScanner = new Scanner(System.in);
         SSLSocketFactory socketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
         ObjectOutputStream out = null;
@@ -39,8 +42,10 @@ public class EVotingClient {
 
         String validationNo = null;
 
-        System.out.println("Witaj w aplikacji klienckiej systemu głosowania elektronicznego! \nJakie dane powinieneś posiadać, aby wziąć udział w głosowaniu?\n"
-                + "- swój numer PESEL\n- specjalne hasło do głosowania, które każdy wyborca otrzymuje drogą pocztową\n"
+        System.out.println("Witaj w aplikacji klienckiej systemu głosowania elektronicznego! \n"
+                + "Jakie dane powinieneś posiadać, aby wziąć udział w głosowaniu?\n"
+                + "- swój numer PESEL\n"
+                + "- specjalne hasło do głosowania, które każdy wyborca otrzymuje drogą pocztową\n"
                 + "\nW razie wątpliwości, zapraszamy na stronę projektu: " + votingSiteAddress + "\n");
         boolean end = false;
         while (!end) {
@@ -105,6 +110,7 @@ public class EVotingClient {
                         in.close();
                         socket.close();
                     } catch (Exception e) {
+                        System.out.println("Błąd techniczny podczas zamykania strumieni służących do komunikacji z serwerem.");
                     }
                 }
             } else if (command == 2) {
@@ -120,6 +126,8 @@ public class EVotingClient {
                     request = new RequestMessage();
                     request.setType(CTF_CANDIDATES_REQ);
                     request.setData(null);
+                    //pytanie: czy nie powinnismy przedstawic swojego nru ktory uprzednio uzyskalismy od cla
+                    //oraz losowego nru ktory sobie wygenerowalismy tak jak w protokole?
                     out.writeObject(request);
                     out.flush();
                     response = (ResponseMessage) in.readObject();
@@ -133,7 +141,7 @@ public class EVotingClient {
                             }
                             System.out.print("Wybierz numer kandydata, na którego chcesz zagłosować: ");
                             int candidate = keyboardScanner.nextInt();
-                            System.out.println("Chcesz zagłosować na kandydata nr " + candidate + ", czyli:" + data.get(candidate));
+                            System.out.println("Chcesz zagłosować na kandydata nr " + candidate + ", czyli: " + data.get(candidate));
                             System.out.print("Kontynuować? (t/n):");
                             String decision = keyboardScanner.next();
                             if (decision.equals("t")) {
@@ -144,12 +152,11 @@ public class EVotingClient {
                                 request.setType(CTF_VOTE_REQ);
                                 boolean idAccepted = false;
                                 while (!idAccepted) {
-                                    //================================================================================================================================
                                     //LOSOWANIE NUMERU IDENTYFIKACYJNEGO
                                     //powtarzane do skutku - aż będzie unikalny (za każdym razem wysyłane zapytanie do CTF)
+                                    Random rnd = new Random();
+                                    identificationNo = Long.toString(Math.abs(rnd.nextLong()));
                                     //
-                                    //
-                                    //================================================================================================================================
                                     data = new ArrayList<String>();
                                     data.add(validationNo);
                                     data.add(identificationNo);
@@ -187,11 +194,10 @@ public class EVotingClient {
                         in.close();
                         socket.close();
                     } catch (Exception e) {
+                        System.out.println("Błąd techniczny podczas zamykania strumieni służących do komunikacji z serwerem.");
                     }
-
                 }
             } else if (command == 3) {
-
                 System.out.print("Czy na pewno chcesz opuścić aplikację? \n"
                         + "Pamiętaj o zachowaniu swoich numerów: identyfikacyjnego i walidacyjnego, w celu późniejszego sprawdzenia poprawności zliczania głosów!\n"
                         + "Wyjść z programu? (t/n): ");
@@ -199,30 +205,9 @@ public class EVotingClient {
                 if (decision.equals("t")) {
                     end = true;
                 }
-
             } else {
                 System.out.println("Nieprawidłowa komenda. Wybierz jedną z dostępnych opcji.");
-
             }
         }
-
-//        String argl = null;
-//        System.out.print("Wprowadz polecenie: ");
-//        while ((argl = sc.nextLine()) != null && argl != "") {
-//            String[] argt = argl.split("\\s");
-//            String command = argt[0];
-//            if (command.equalsIgnoreCase("polacz")) {
-//            } else if (command.equalsIgnoreCase("pobierzURN")) {
-//            } else if (command.equalsIgnoreCase("glosuj")) {
-//            } else if (command.equalsIgnoreCase("pomoc")) {
-//                System.out.println("Oto ropoznawalne polecenia: ");
-//                System.out.println("polacz {l|t} {adresIp|adresUrl} portNr");
-//                System.out.println("pobierzURN userId userPassword");
-//                System.out.println("glosuj urn glos");
-//                System.out.println("pomoc - wyswietla ten komunikat");
-//            } else {
-//                System.out.println("Nie rozpoznaje komendy - wpisz pomoc aby podejrzec liste dopuszczalnych opcji.");
-//            }
-//        }
     }
 }

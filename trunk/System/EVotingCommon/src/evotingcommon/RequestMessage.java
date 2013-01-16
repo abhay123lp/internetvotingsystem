@@ -1,16 +1,8 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package evotingcommon;
 
 import java.io.Serializable;
 import java.util.List;
 
-/**
- *
- * @author Maciek
- */
 public class RequestMessage implements Serializable{
     private int type;
     private List<String> data;
