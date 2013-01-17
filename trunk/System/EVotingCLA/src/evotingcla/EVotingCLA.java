@@ -110,25 +110,23 @@ public class EVotingCLA extends Thread {
             //dowiedzmy sie dwoch rzeczy - czy te dane sa poprawne i czy wyborca odebral juz swoj nr
             boolean registered = cladb.userAlreadyRegistered(pesel);
             boolean matching = cladb.usernameMatchesPassword(pesel, password);
-            if (registered && matching) {
+            System.out.println("registered: " + registered + " matching: " + matching);
+            if (!registered && matching) {
                 response.setStatus(CLA_OK_RESP);
                 Random rnd = new Random();
-                String validationNo = Long.toString(rnd.nextLong());
+                String validationNo = Long.toString(Math.abs(rnd.nextLong()));
                 while (cladb.URNAlreadyExists(validationNo)) {
-                    validationNo = Long.toString(rnd.nextLong());
+                    System.out.println("Unfortunately the number alredy exists.");
+                    validationNo = Long.toString(Math.abs(rnd.nextLong()));
                 }
+                cladb.alterVoter(pesel, validationNo);
                 response.getData().add(validationNo);
             } else {
                 response.setStatus(CLA_WRONG_DATA_RESP);
                 response.getData().add("Uztkownik ma juz swoj nr walidacyjny:" + registered + ". Hasło jest niepoprawne: " + matching);
             }
-            /*
-             * List<String> data = new ArrayList<String>();
-             * data.add("135631265472452474525758"); response.setData(data);
-             * outputStream.writeObject(response);
-             *
-             */
-
+            outputStream.writeObject(response);
+            outputStream.flush();
         } catch (Exception e) {
             e.printStackTrace();
             ResponseMessage response = new ResponseMessage();
