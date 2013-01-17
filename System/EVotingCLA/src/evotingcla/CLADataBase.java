@@ -153,8 +153,8 @@ public class CLADataBase {
         String SQLQuery = "SELECT * FROM CLATable WHERE pesel='" + pesel + "'";
         ResultSet result = stm.executeQuery(SQLQuery);
         if (result.next()) {
-            String uri = result.getString("uri");
-            if(uri == null || uri == "")
+            String urn = result.getString("urn");
+            if(urn == null || urn == "")
                 return false;
             else
                 return true;
@@ -163,9 +163,9 @@ public class CLADataBase {
         }
     }
 
-    public boolean URIAlreadyExists(String uri) throws SQLException {
+    public boolean URNAlreadyExists(String urn) throws SQLException {
         Statement stm = connection.createStatement();
-        String SQLQuery = "SELECT * FROM CLATable WHERE uri='" + uri + "'";
+        String SQLQuery = "SELECT * FROM CLATable WHERE urn='" + urn + "'";
         ResultSet result = stm.executeQuery(SQLQuery);
         if (result.next()) {
             return true;
@@ -174,14 +174,14 @@ public class CLADataBase {
         }
     }
     
-    public List<String> registeredUsersUris() throws SQLException{
+    public List<String> registeredUsersUrns() throws SQLException{
         List<String> list = new ArrayList<String>(100);
         Statement stm = connection.createStatement();
-        String SQLQuery = "SELECT uri FROM CLATable WHERE uri IS NOT NULL";
+        String SQLQuery = "SELECT urn FROM CLATable WHERE urn IS NOT NULL";
         ResultSet result = stm.executeQuery(SQLQuery);
         while (result.next()) {
             String res;
-            if(!"".equals(res = result.getString("uri")))
+            if(!"".equals(res = result.getString("urn")))
                 list.add(res);
         }
         return list;
