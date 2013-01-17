@@ -114,7 +114,7 @@ public class EVotingCLA extends Thread {
                 response.setStatus(CLA_OK_RESP);
                 Random rnd = new Random();
                 String validationNo = Long.toString(rnd.nextLong());
-                while (cladb.URIAlreadyExists(validationNo)) {
+                while (cladb.URNAlreadyExists(validationNo)) {
                     validationNo = Long.toString(rnd.nextLong());
                 }
                 response.getData().add(validationNo);
@@ -130,7 +130,7 @@ public class EVotingCLA extends Thread {
              */
 
         } catch (Exception e) {
-            System.out.println("Sprawdz czy dobrze sformulowales rzadanie.");
+            e.printStackTrace();
             ResponseMessage response = new ResponseMessage();
             response.setStatus(2);
             response.setData(null);
