@@ -59,9 +59,9 @@ public class EVotingCommon {
         CLADBPassword = "admin1";
         CTFDBUsername = "admin";
         CTFDBPassword = "admin1";
-        CLACreatingScriptFileAddress = MainDirectory + File.separator + "DerbyScripts" + File.separator + "CLADBStructure";
-        CTFCreatingScriptFileAddress = MainDirectory + File.separator + "DerbyScripts" + File.separator + "CTFDBStructure";
-        CLAPopulatingScriptFileAddress = MainDirectory + File.separator  + "DerbyScripts" + File.separator + "populateCLADB";
+        CLACreatingScriptFileAddress = MainDirectory + File.separator + "DerbyScripts" + File.separator + "CLADBStructure.sql";
+        CTFCreatingScriptFileAddress = MainDirectory + File.separator + "DerbyScripts" + File.separator + "CTFDBStructure.sql";
+        CLAPopulatingScriptFileAddress = MainDirectory + File.separator  + "DerbyScripts" + File.separator + "populateCLADB.sql";
     }
 
     public static void main(String[] args) {

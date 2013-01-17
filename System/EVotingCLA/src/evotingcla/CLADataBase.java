@@ -10,6 +10,7 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Scanner;
 
+
 public class CLADataBase {
 
     static final String driverClassName = "org.apache.derby.jdbc.EmbeddedDriver";

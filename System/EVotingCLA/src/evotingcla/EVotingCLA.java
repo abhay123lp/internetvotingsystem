@@ -52,6 +52,7 @@ public class EVotingCLA extends Thread {
         if (line.equals("utworz")) {
             System.out.println("Tworze baze danych ...");
             CLADataBase.createDBOnDisk(EVotingCommon.CLADBAddr, EVotingCommon.CLACreatingScriptFileAddress, EVotingCommon.CLADBUsername, EVotingCommon.CLADBPassword);
+            System.out.println("TO JEST TO: "+EVotingCommon.CLAPopulatingScriptFileAddress);
             CLADataBase.populate(EVotingCommon.CLADBAddr, EVotingCommon.CLAPopulatingScriptFileAddress, EVotingCommon.CLADBUsername, EVotingCommon.CLADBPassword);
         } else {
             System.out.println("Nie tworze niczego.");
