@@ -90,6 +90,20 @@ public class CLADataBase {
         }
     }
     
+    public boolean usernameMatchesPassword(String pesel, String password) throws SQLException, Exception {
+        Statement stm = connection.createStatement();
+        String SQLQuery = "SELECT * FROM CLATable WHERE pesel='" + pesel + "'";
+        ResultSet result = stm.executeQuery(SQLQuery);
+        if (result.next()) {
+            if(pesel.equals(result.getString("pesel")) && password.equals(result.getString("password")))
+                return true;
+            else
+                return false;
+        } else {
+            throw new Exception("Nie ma takiego glosujacego o nrze pesel: " + pesel);
+        }
+    }
+    
     public boolean insertVoter(String pesel, String password) throws SQLException {
         Statement stm = null;
         String SQLInsertQuery = null;
