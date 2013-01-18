@@ -17,10 +17,16 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 
 public class EVotingCLA extends Thread {
-    
+
     private static CLADataBase cladb;
 
     public static void main(String[] args) throws SQLException, FileNotFoundException, ClassNotFoundException, IOException {
+
+        try {
+            cladb = new CLADataBase(EVotingCommon.CLADBAddr, EVotingCommon.CLADBUsername, EVotingCommon.CLADBPassword);
+        } catch (InstantiationException | IllegalAccessException ex) {
+            Logger.getLogger(EVotingCLA.class.getName()).log(Level.SEVERE, null, ex);
+        }
 
         //ustawienie zmiennych srodowiskowych dla implementacji javowej protokolu ssl
         System.setProperty("javax.net.ssl.keyStore", EVotingCommon.SSLKeyAndCertStorageDir + "/CLAKeyStore");
@@ -31,7 +37,9 @@ public class EVotingCLA extends Thread {
 
         //Administrator podczas startu decyduje czy utworzyc nowa baze danych - w domyslnej strukturze katalogow
         //Decyzja ta powinna byc oparta na tym czy baza juz istnieje czy jeszcze nie i musimy to zrobic
-        System.out.println("Jesli nie ma jeszcze bazy danych wpisz: utworz. W przeciwnym razie wcisnij cokolwiek.");
+        System.out.println("Jesli nie ma jeszcze bazy danych wpisz: utworz.\n"
+                + " Jesli chcesz zrzucic numery dla komisji T zapisane w kolejnych liniach do pliku tekstowego wpisz: zrzuc.\n"
+                + " W przeciwnym razie wcisnij cokolwiek.");
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         String line = br.readLine();
         if (line.equals("utworz")) {
@@ -39,16 +47,23 @@ public class EVotingCLA extends Thread {
             CLADataBase.createDBOnDisk(EVotingCommon.CLADBAddr, EVotingCommon.CLACreatingScriptFileAddress, EVotingCommon.CLADBUsername, EVotingCommon.CLADBPassword);
             System.out.println("TO JEST TO: " + EVotingCommon.CLAPopulatingScriptFileAddress);
             CLADataBase.populate(EVotingCommon.CLADBAddr, EVotingCommon.CLAPopulatingScriptFileAddress, EVotingCommon.CLADBUsername, EVotingCommon.CLADBPassword);
+        } else if (line.equals("zrzuc")) {
+            List<String> urns = cladb.registeredUsersUrns();
+            PrintWriter pw = null;
+            try {
+                pw = new PrintWriter(new BufferedWriter(new FileWriter(EVotingCommon.CLAToCTFUrnFile)));
+                for (String urn : urns) {
+                    pw.println(urn);
+                }
+            } finally {
+                pw.flush();
+                pw.close();
+            }
+            System.exit(0);
         } else {
             System.out.println("Nie tworze niczego.");
         }
         System.out.println("Przechodze do nasluchu ...");
-
-        try {
-            cladb = new CLADataBase(EVotingCommon.CLADBAddr, EVotingCommon.CLADBUsername, EVotingCommon.CLADBPassword);
-        } catch (InstantiationException | IllegalAccessException ex) {
-            Logger.getLogger(EVotingCLA.class.getName()).log(Level.SEVERE, null, ex);
-        }
 
         try {
             serverSocket = (SSLServerSocket) socketFactory.createServerSocket(EVotingCommon.CLAPortNumber);
@@ -106,7 +121,7 @@ public class EVotingCLA extends Thread {
                 response.getData().add(validationNo);
             } else {
                 response.setStatus(EVotingCommon.CLA_WRONG_DATA_RESP);
-                response.getData().add("Uztkownik ma juz swoj nr walidacyjny:" + registered + ". Hasło jest niepoprawne: " + matching);
+                response.getData().add("Hasło jest poprawne: " + matching + ". Uztkownik ma juz swoj nr walidacyjny:" + registered);
             }
             outputStream.writeObject(response);
             outputStream.flush();
