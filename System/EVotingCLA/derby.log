@@ -1,0 +1,10 @@
+----------------------------------------------------------------
+Fri Jan 18 01:59:24 CET 2013:
+ Uruchamianie wersji The Apache Software Foundation - Apache Derby - 10.9.1.0 - (1344872) systemu Derby: instancja a816c00e-013c-4b2a-d7d3-00000307ab38
+w katalogu bazy danych C:\Users\Maciek\Desktop\voting\System\CLADB\CLADB  sun.misc.Launcher$AppClassLoader@6040f3c1 
+
+java.vendor=Oracle Corporation
+java.runtime.version=1.7.0_02-b13
+user.dir=C:\Users\Maciek\Desktop\voting\System\EVotingCLA
+derby.system.home=null
+Uruchomiono program ładujący klasę bazy danych - derby.database.classpath=''

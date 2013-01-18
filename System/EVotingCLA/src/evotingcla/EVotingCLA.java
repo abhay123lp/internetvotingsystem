@@ -5,7 +5,6 @@ import evotingcommon.RequestMessage;
 import evotingcommon.ResponseMessage;
 import java.io.*;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,28 +17,14 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 
 public class EVotingCLA extends Thread {
-
-    private static int CLA_VALIDATION_REQ = 0,
-            CTF_CANDIDATES_REQ = 0,
-            CTF_VOTE_REQ = 1,
-            CLA_OK_RESP = 0,
-            CLA_WRONG_DATA_RESP = 1,
-            CLA_SERVER_ERROR_RESP = 2,
-            CTF_OK_RESP = 0,
-            CTF_VALIDATION_INCORRECT_RESP = 1,
-            CTF_VALIDATION_USED_RESP = 2,
-            CTF_ID_USED_RESP = 3,
-            CTF_SERVER_ERROR_RESP = 4;
+    
     private static CLADataBase cladb;
 
     public static void main(String[] args) throws SQLException, FileNotFoundException, ClassNotFoundException, IOException {
 
         //ustawienie zmiennych srodowiskowych dla implementacji javowej protokolu ssl
-
         System.setProperty("javax.net.ssl.keyStore", EVotingCommon.SSLKeyAndCertStorageDir + "/CLAKeyStore");
         System.setProperty("javax.net.ssl.keyStorePassword", "123456");
-
-        //
 
         ServerSocketFactory socketFactory = SSLServerSocketFactory.getDefault();
         ServerSocket serverSocket;
@@ -52,7 +37,7 @@ public class EVotingCLA extends Thread {
         if (line.equals("utworz")) {
             System.out.println("Tworze baze danych ...");
             CLADataBase.createDBOnDisk(EVotingCommon.CLADBAddr, EVotingCommon.CLACreatingScriptFileAddress, EVotingCommon.CLADBUsername, EVotingCommon.CLADBPassword);
-            System.out.println("TO JEST TO: "+EVotingCommon.CLAPopulatingScriptFileAddress);
+            System.out.println("TO JEST TO: " + EVotingCommon.CLAPopulatingScriptFileAddress);
             CLADataBase.populate(EVotingCommon.CLADBAddr, EVotingCommon.CLAPopulatingScriptFileAddress, EVotingCommon.CLADBUsername, EVotingCommon.CLADBPassword);
         } else {
             System.out.println("Nie tworze niczego.");
@@ -61,9 +46,7 @@ public class EVotingCLA extends Thread {
 
         try {
             cladb = new CLADataBase(EVotingCommon.CLADBAddr, EVotingCommon.CLADBUsername, EVotingCommon.CLADBPassword);
-        } catch (InstantiationException ex) {
-            Logger.getLogger(EVotingCLA.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
+        } catch (InstantiationException | IllegalAccessException ex) {
             Logger.getLogger(EVotingCLA.class.getName()).log(Level.SEVERE, null, ex);
         }
 
@@ -99,20 +82,20 @@ public class EVotingCLA extends Thread {
 
             //do zaimplementowania!!!
             RequestMessage request = (RequestMessage) inputStream.readObject();
-            if (request.getType() != CLA_VALIDATION_REQ) {
+            if (request.getType() != EVotingCommon.CLA_VALIDATION_REQ) {
                 System.out.println("Powinienem otrzymac cla_validation_req - sprawdz to");
             }
             String pesel = request.getData().get(0);
             String password = request.getData().get(1);
             ResponseMessage response = new ResponseMessage();
-            List<String> data = new ArrayList<String>();
+            List<String> data = new ArrayList<>();
             response.setData(data);
             //dowiedzmy sie dwoch rzeczy - czy te dane sa poprawne i czy wyborca odebral juz swoj nr
             boolean registered = cladb.userAlreadyRegistered(pesel);
             boolean matching = cladb.usernameMatchesPassword(pesel, password);
             System.out.println("registered: " + registered + " matching: " + matching);
             if (!registered && matching) {
-                response.setStatus(CLA_OK_RESP);
+                response.setStatus(EVotingCommon.CLA_OK_RESP);
                 Random rnd = new Random();
                 String validationNo = Long.toString(Math.abs(rnd.nextLong()));
                 while (cladb.URNAlreadyExists(validationNo)) {
@@ -122,7 +105,7 @@ public class EVotingCLA extends Thread {
                 cladb.alterVoter(pesel, validationNo);
                 response.getData().add(validationNo);
             } else {
-                response.setStatus(CLA_WRONG_DATA_RESP);
+                response.setStatus(EVotingCommon.CLA_WRONG_DATA_RESP);
                 response.getData().add("Uztkownik ma juz swoj nr walidacyjny:" + registered + ". Hasło jest niepoprawne: " + matching);
             }
             outputStream.writeObject(response);
@@ -130,10 +113,11 @@ public class EVotingCLA extends Thread {
         } catch (Exception e) {
             e.printStackTrace();
             ResponseMessage response = new ResponseMessage();
-            response.setStatus(2);
+            response.setStatus(EVotingCommon.CLA_SERVER_ERROR_RESP);
             response.setData(null);
             try {
                 outputStream.writeObject(response);
+                outputStream.flush();
             } catch (IOException f) {
                 f.printStackTrace();
                 System.err.println("BŁĄD: Niedziałające połączenie - nie udało się wysłać klientowi wiadomości o wyjątku po stronie serwera...");
