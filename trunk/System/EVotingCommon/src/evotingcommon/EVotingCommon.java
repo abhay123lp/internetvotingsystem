@@ -39,6 +39,8 @@ public class EVotingCommon {
     public final static String CLAPopulatingScriptFileAddress;
     public final static String CTFPopulatingScriptFileAddress;
     
+    public final static String CLAToCTFUrnFile;
+    
     public final static String CLAIPAddress = "localhost", CTFIPAddress = "localhost";
     public final static int CLAPortNumber = 8102, CTFPortNumber = 8103;
 
@@ -66,6 +68,7 @@ public class EVotingCommon {
         CTFCreatingScriptFileAddress = MainDirectory + File.separator + "DerbyScripts" + File.separator + "CTFDBStructure.sql";
         CLAPopulatingScriptFileAddress = MainDirectory + File.separator  + "DerbyScripts" + File.separator + "populateCLADB.sql";
         CTFPopulatingScriptFileAddress = MainDirectory + File.separator  + "DerbyScripts" + File.separator + "populateCTFDB.sql";
+        CLAToCTFUrnFile = MainDirectory + File.separator  + "UrnDump" + File.separator + "Urns.txt";
     }
 
     public static void main(String[] args) {
