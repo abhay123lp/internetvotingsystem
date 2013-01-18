@@ -7,7 +7,6 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.util.Random;
 import java.util.Scanner;
 
 
@@ -154,7 +153,7 @@ public class CLADataBase {
         ResultSet result = stm.executeQuery(SQLQuery);
         if (result.next()) {
             String urn = result.getString("urn");
-            if(urn == null || urn == "")
+            if(urn == null || urn.equals(""))
                 return false;
             else
                 return true;
@@ -175,7 +174,7 @@ public class CLADataBase {
     }
     
     public List<String> registeredUsersUrns() throws SQLException{
-        List<String> list = new ArrayList<String>(100);
+        List<String> list = new ArrayList<>(100);
         Statement stm = connection.createStatement();
         String SQLQuery = "SELECT urn FROM CLATable WHERE urn IS NOT NULL";
         ResultSet result = stm.executeQuery(SQLQuery);

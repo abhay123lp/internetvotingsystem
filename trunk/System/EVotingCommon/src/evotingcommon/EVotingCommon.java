@@ -7,7 +7,7 @@ import java.util.logging.Logger;
 
 public class EVotingCommon {
 
-    private static int CLA_VALIDATION_REQ = 0,
+    public static int CLA_VALIDATION_REQ = 0,
             CTF_CANDIDATES_REQ = 0,
             CTF_VOTE_REQ = 1,
             CLA_OK_RESP = 0,
@@ -17,7 +17,9 @@ public class EVotingCommon {
             CTF_VALIDATION_INCORRECT_RESP = 1,
             CTF_VALIDATION_USED_RESP = 2,
             CTF_ID_USED_RESP = 3,
-            CTF_SERVER_ERROR_RESP = 4;
+            CTF_SERVER_ERROR_RESP = 4,
+            CTF_CANDIDATES_RESP = 5,
+            CTF_WRONG_DATA_RESP = 6;
     
     
     public final static String MainDirectory;
@@ -35,6 +37,7 @@ public class EVotingCommon {
     public final static String CLACreatingScriptFileAddress;
     public final static String CTFCreatingScriptFileAddress;
     public final static String CLAPopulatingScriptFileAddress;
+    public final static String CTFPopulatingScriptFileAddress;
     
     public final static String CLAIPAddress = "localhost", CTFIPAddress = "localhost";
     public final static int CLAPortNumber = 8102, CTFPortNumber = 8103;
@@ -62,6 +65,7 @@ public class EVotingCommon {
         CLACreatingScriptFileAddress = MainDirectory + File.separator + "DerbyScripts" + File.separator + "CLADBStructure.sql";
         CTFCreatingScriptFileAddress = MainDirectory + File.separator + "DerbyScripts" + File.separator + "CTFDBStructure.sql";
         CLAPopulatingScriptFileAddress = MainDirectory + File.separator  + "DerbyScripts" + File.separator + "populateCLADB.sql";
+        CTFPopulatingScriptFileAddress = MainDirectory + File.separator  + "DerbyScripts" + File.separator + "populateCTFDB.sql";
     }
 
     public static void main(String[] args) {

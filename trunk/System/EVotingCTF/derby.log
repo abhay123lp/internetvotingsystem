@@ -1,0 +1,10 @@
+----------------------------------------------------------------
+Fri Jan 18 07:19:43 CET 2013:
+ Uruchamianie wersji The Apache Software Foundation - Apache Derby - 10.9.1.0 - (1344872) systemu Derby: instancja a816c00e-013c-4c50-1b25-000002ea3ec8
+w katalogu bazy danych C:\Users\Maciek\Desktop\voting\System\CTFDB\CTFDB  sun.misc.Launcher$AppClassLoader@6040f3c1 
+
+java.vendor=Oracle Corporation
+java.runtime.version=1.7.0_02-b13
+user.dir=C:\Users\Maciek\Desktop\voting\System\EVotingCTF
+derby.system.home=null
+Uruchomiono program ładujący klasę bazy danych - derby.database.classpath=''
