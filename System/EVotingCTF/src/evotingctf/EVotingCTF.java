@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package evotingctf;
 
 import evotingcommon.EVotingCommon;
@@ -23,17 +19,10 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 
-/**
- *
- * @author Maciek
- */
 public class EVotingCTF extends Thread {
 
     private static CTFDataBase ctfdb;
 
-    /**
-     * @param args the command line arguments
-     */
     public static void main(String[] args) throws SQLException, FileNotFoundException, ClassNotFoundException, IOException{
 
         //ŁADOWANIE DANYCH Z CLA - do zrobienia
@@ -51,7 +40,6 @@ public class EVotingCTF extends Thread {
         if (line.equals("utworz")) {
             System.out.println("Tworze baze danych ...");
             CTFDataBase.createDBOnDisk(EVotingCommon.CTFDBAddr, EVotingCommon.CTFCreatingScriptFileAddress, EVotingCommon.CTFDBUsername, EVotingCommon.CTFDBPassword);
-            System.out.println("TO JEST TO: " + EVotingCommon.CTFPopulatingScriptFileAddress);
             CTFDataBase.populate(EVotingCommon.CTFDBAddr, EVotingCommon.CTFPopulatingScriptFileAddress, EVotingCommon.CTFDBUsername, EVotingCommon.CTFDBPassword);
         } else {
             System.out.println("Nie tworze niczego.");
@@ -97,47 +85,59 @@ public class EVotingCTF extends Thread {
             //do zaimplementowania!!!
             RequestMessage request = (RequestMessage) inputStream.readObject();
             if (request.getType() == EVotingCommon.CTF_CANDIDATES_REQ) {
-                List<String> candidates = ctfdb.getCandidates();
                 ResponseMessage response = new ResponseMessage();
                 response.setStatus(EVotingCommon.CTF_CANDIDATES_RESP);
+                List<String> candidates = ctfdb.getCandidates();
                 response.setData(candidates);
                 outputStream.writeObject(response);
                 outputStream.flush();
             } else if (request.getType() == EVotingCommon.CTF_VOTE_REQ) {
                 List<String> data = request.getData();
+                /*//to jest chyba zle - popatrz na odpowiednia czesc klienta
                 String identificationNo = data.get(0),
                         validationNo = data.get(1);
+                */
+                
+                String validationNo = data.get(0), identificationNo = data.get(1), candidateNo = data.get(2);
                 int candidate = 0;
                 try {
-                    candidate = Integer.parseInt(data.get(2));
+                    candidate = Integer.parseInt(candidateNo);
                 } catch (NumberFormatException e) {
+                    candidate = -1;
+                    /*
                     System.err.println("BŁĄD: numer kandydata nie jest poprawną liczbą!");
                     ResponseMessage response = new ResponseMessage();
-                    response.setStatus(EVotingCommon.CTF_WRONG_DATA_RESP);
+                    response.setStatus(EVotingCommon.CTF_WRONG_DATA_RESP);//a bedzie czekal na kolejna wiadomosc wyslana pare linijek nizej? - rozsynchronizuje sie
                     response.setData(null);
                     outputStream.writeObject(response);
                     outputStream.flush();
-                    
+                    * 
+                    */
                 }
-
-                boolean validationInBase = ctfdb.checkValidationCorrect(validationNo),
+                
+                boolean validationCorrect = ctfdb.checkValidationCorrect(validationNo),
                         alreadyVoted = ctfdb.checkValidationUsed(validationNo),
                         idUsed = ctfdb.checkIdentificationUsed(identificationNo);
 
+                System.out.println("Numer walidacyjny jest ok: " + validationCorrect + ". Uzytkownik juz glosowal: " + alreadyVoted + ". Numer identyfikacyjny jest juz zajety: " + idUsed);
+                
                 ResponseMessage response = new ResponseMessage();
                 response.setData(null);
 
-                if (validationInBase) {
+                if (validationCorrect) {
                     if (!alreadyVoted) {
                         if (!idUsed) {
                             ctfdb.markValidationUsed(validationNo);
                             ctfdb.addVote(identificationNo, candidate);
                             response.setStatus(EVotingCommon.CTF_OK_RESP);
+                            System.out.println("Glos zostal oddany.");
                         } else {
                             response.setStatus(EVotingCommon.CTF_ID_USED_RESP);
+                            System.out.println("Numer identyfikacyjny jest juz zajety.");
                         }
                     } else {
                         response.setStatus(EVotingCommon.CTF_VALIDATION_USED_RESP);
+                            System.out.println("Uzytkownik o tym numerze walidacyjnym juz glosowal.");
                     }
                 } else {
                     response.setStatus(EVotingCommon.CTF_VALIDATION_INCORRECT_RESP);

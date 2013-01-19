@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package evotingctf;
 
 import java.io.BufferedReader;
@@ -13,10 +9,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Scanner;
 
-/**
- *
- * @author Maciek
- */
 public class CTFDataBase {
 
     static final String driverClassName = "org.apache.derby.jdbc.EmbeddedDriver";
@@ -89,10 +81,10 @@ public class CTFDataBase {
             SQLInsertFile += sc.nextLine();
         }
         for (String sqlStatement : SQLInsertFile.split(";")) {//tak sie oddziela poszczegolne instrukcje sql
-            System.out.println(sqlStatement);
             if (sqlStatement != null && !"".equals(sqlStatement)) {
                 statement = connection.createStatement();
                 statement.execute(sqlStatement);
+                System.out.println(sqlStatement);
             }
         }
     }
@@ -103,8 +95,8 @@ public class CTFDataBase {
         ResultSet rs = stmt.executeQuery(SQLQuery);
         List<String> candidates = new ArrayList<>();
         while (rs.next()) {
-            String name = rs.getString("first_name"), surname = rs.getString("last_name");
-            candidates.add(name + " " + surname);
+            String c_id = rs.getString("c_id"), name = rs.getString("first_name"), surname = rs.getString("last_name");
+            candidates.add(c_id + ": " + name + " " + surname);
         }
         return candidates;
     }
@@ -113,7 +105,6 @@ public class CTFDataBase {
         Statement stmt = connection.createStatement();
         String SQLQuery = "SELECT * FROM validList WHERE urn=" + validationNo;
         ResultSet rs = stmt.executeQuery(SQLQuery);
-
         if (rs.next()) {
             return true;
         } else {
@@ -121,25 +112,31 @@ public class CTFDataBase {
         }
     }
 
-    public boolean checkValidationUsed(String validationNo) throws SQLException{
+    public boolean checkValidationUsed(String validationNo) throws SQLException, Exception {
         Statement stmt = connection.createStatement();
         String SQLQuery = "SELECT * FROM validList WHERE urn=" + validationNo;
         ResultSet rs = stmt.executeQuery(SQLQuery);
 
         if (rs.next()) {
             int used = rs.getInt("used");
-            if(used==0){
+            if (used == 0) {
                 return false;
-            }
-            else{
+            } else {
                 return true;
             }
         } else {
-            return false;//czy raczej wyjątek?
+            return false;
+            //throw new Exception("Nie ma glosujacego o takim urn!");
         }
     }
 
-    public boolean checkIdentificationUsed(String identificationNo) throws SQLException{
+    public void markValidationUsed(String validationNo) throws SQLException {
+        Statement stmt = connection.createStatement();
+        String SQLUpdateQuery = "UPDATE validList SET used=1 WHERE urn=" + validationNo;
+        stmt.executeUpdate(SQLUpdateQuery);
+    }
+
+    public boolean checkIdentificationUsed(String identificationNo) throws SQLException {
         Statement stmt = connection.createStatement();
         String SQLQuery = "SELECT * FROM votes WHERE id=" + identificationNo;
         ResultSet rs = stmt.executeQuery(SQLQuery);
@@ -151,15 +148,9 @@ public class CTFDataBase {
         }
     }
 
-    public void markValidationUsed(String validationNo) throws SQLException {
+    public void addVote(String identificationNo, int candidate) throws SQLException {
         Statement stmt = connection.createStatement();
-        String SQLUpdateQuery = "UPDATE validList SET used=1 WHERE urn=" + validationNo;
-        stmt.executeUpdate(SQLUpdateQuery);
-    }
-
-    public void addVote(String identificationNo, int candidate) throws SQLException{
-        Statement stmt = connection.createStatement();
-        String SQLInsertQuery = "INSERT INTO votes (id,vote) VALUES (" + identificationNo+","+candidate+")";
+        String SQLInsertQuery = "INSERT INTO votes (id,vote) VALUES ('" + identificationNo + "', " + candidate + ")";
         stmt.executeUpdate(SQLInsertQuery);
     }
 }
