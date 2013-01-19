@@ -18,15 +18,9 @@ import javax.net.ssl.SSLSocket;
 
 public class EVotingCLA extends Thread {
 
-    private static CLADataBase cladb;
+    private static CLADataBase cladb = null;
 
     public static void main(String[] args) throws SQLException, FileNotFoundException, ClassNotFoundException, IOException {
-
-        try {
-            cladb = new CLADataBase(EVotingCommon.CLADBAddr, EVotingCommon.CLADBUsername, EVotingCommon.CLADBPassword);
-        } catch (InstantiationException | IllegalAccessException ex) {
-            Logger.getLogger(EVotingCLA.class.getName()).log(Level.SEVERE, null, ex);
-        }
 
         //ustawienie zmiennych srodowiskowych dla implementacji javowej protokolu ssl
         System.setProperty("javax.net.ssl.keyStore", EVotingCommon.SSLKeyAndCertStorageDir + "/CLAKeyStore");
@@ -45,9 +39,16 @@ public class EVotingCLA extends Thread {
         if (line.equals("utworz")) {
             System.out.println("Tworze baze danych ...");
             CLADataBase.createDBOnDisk(EVotingCommon.CLADBAddr, EVotingCommon.CLACreatingScriptFileAddress, EVotingCommon.CLADBUsername, EVotingCommon.CLADBPassword);
-            System.out.println("TO JEST TO: " + EVotingCommon.CLAPopulatingScriptFileAddress);
             CLADataBase.populate(EVotingCommon.CLADBAddr, EVotingCommon.CLAPopulatingScriptFileAddress, EVotingCommon.CLADBUsername, EVotingCommon.CLADBPassword);
-        } else if (line.equals("zrzuc")) {
+        }
+
+        try {
+            cladb = new CLADataBase(EVotingCommon.CLADBAddr, EVotingCommon.CLADBUsername, EVotingCommon.CLADBPassword);
+        } catch (InstantiationException | IllegalAccessException ex) {
+            Logger.getLogger(EVotingCLA.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        if (line.equals("zrzuc")) {
             List<String> urns = cladb.registeredUsersUrns();
             PrintWriter pw = null;
             try {
@@ -60,9 +61,8 @@ public class EVotingCLA extends Thread {
                 pw.close();
             }
             System.exit(0);
-        } else {
-            System.out.println("Nie tworze niczego.");
         }
+
         System.out.println("Przechodze do nasluchu ...");
 
         try {
