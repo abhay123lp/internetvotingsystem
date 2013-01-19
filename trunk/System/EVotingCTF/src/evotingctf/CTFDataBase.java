@@ -1,10 +1,12 @@
 package evotingctf;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.Scanner;
@@ -89,6 +91,44 @@ public class CTFDataBase {
         }
     }
 
+    public static void readValidationNumbersFile(String dbAddress, String validationFileAddress, String username, String password) throws ClassNotFoundException,SQLException{
+        File file = null;
+        Scanner sc = null;
+        try {
+            file = new File(validationFileAddress);
+            sc = new Scanner(file);
+        } catch (FileNotFoundException e) {
+            System.out.println("Nie znaleziono podanego pliku. Nie wczytuję danych dotyczących numerów walidacyjnych!");
+            return;
+        }
+        List<String> urns= new ArrayList<>();
+        while (sc.hasNext()) {
+            urns.add(sc.next());
+        }
+        sc.close();
+        
+        String connAddr = "jdbc:derby:" + dbAddress;
+        Connection connection = null;
+        Class.forName(driverClassName);
+        Properties params = new Properties();
+        params.setProperty("user", username);
+        params.setProperty("password", password);
+        params.setProperty("create", "true");
+        connection = DriverManager.getConnection(connAddr, params);
+        Statement stmt = connection.createStatement();
+        StringBuilder insert = new StringBuilder("INSERT INTO validList (urn,used) VALUES ");
+        int urnsSize = urns.size();
+        for(int i=0;i<urnsSize;i++){
+            insert.append("('").append(urns.get(i)).append("', 0)");
+            if(i<urnsSize-1){
+                insert.append(",\n");
+            }
+        }
+        System.out.println(insert.toString());
+        stmt.executeUpdate("DELETE FROM validList");
+        stmt.executeUpdate(insert.toString());
+    }
+
     public List<String> getCandidates() throws SQLException {
         Statement stmt = connection.createStatement();
         String SQLQuery = "SELECT * FROM candidates";
@@ -103,7 +143,7 @@ public class CTFDataBase {
 
     public boolean checkValidationCorrect(String validationNo) throws SQLException {
         Statement stmt = connection.createStatement();
-        String SQLQuery = "SELECT * FROM validList WHERE urn=" + validationNo;
+        String SQLQuery = "SELECT * FROM validList WHERE urn='" + validationNo+"'";
         ResultSet rs = stmt.executeQuery(SQLQuery);
         if (rs.next()) {
             return true;
@@ -114,7 +154,7 @@ public class CTFDataBase {
 
     public boolean checkValidationUsed(String validationNo) throws SQLException, Exception {
         Statement stmt = connection.createStatement();
-        String SQLQuery = "SELECT * FROM validList WHERE urn=" + validationNo;
+        String SQLQuery = "SELECT * FROM validList WHERE urn='" + validationNo+"'";
         ResultSet rs = stmt.executeQuery(SQLQuery);
 
         if (rs.next()) {
@@ -132,13 +172,13 @@ public class CTFDataBase {
 
     public void markValidationUsed(String validationNo) throws SQLException {
         Statement stmt = connection.createStatement();
-        String SQLUpdateQuery = "UPDATE validList SET used=1 WHERE urn=" + validationNo;
+        String SQLUpdateQuery = "UPDATE validList SET used=1 WHERE urn='" + validationNo+"'";
         stmt.executeUpdate(SQLUpdateQuery);
     }
 
     public boolean checkIdentificationUsed(String identificationNo) throws SQLException {
         Statement stmt = connection.createStatement();
-        String SQLQuery = "SELECT * FROM votes WHERE id=" + identificationNo;
+        String SQLQuery = "SELECT * FROM votes WHERE id='" + identificationNo+"'";
         ResultSet rs = stmt.executeQuery(SQLQuery);
 
         if (rs.next()) {

@@ -14,15 +14,12 @@ public class EVotingClient {
     private final static String votingSiteAddress = "http://www.ii.uj.edu.pl/~ziarkows/voting";
     private static SSLSocket socket;
 
-
     public static void main(String[] args) {
 
         //ustawienie zmiennych srodowiskowych dla implementacji javowej protokolu ssl
 
         System.setProperty("javax.net.ssl.trustStore", EVotingCommon.SSLKeyAndCertStorageDir + "/VotComCertMag");
         System.setProperty("javax.net.ssl.trustStorePassword", "123456");
-
-        //
 
         Scanner keyboardScanner = new Scanner(System.in);
         SSLSocketFactory socketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
@@ -78,7 +75,7 @@ public class EVotingClient {
                     int responseStatus = response.getStatus();
                     if (responseStatus == EVotingCommon.CLA_OK_RESP) {
                         validationNo = response.getData().get(0);
-                        System.out.printf("Twój numer walidacyjny to: %s", validationNo);
+                        System.out.printf("Twój numer walidacyjny to: %s\n Zapisz swój numer w bezpiecznym miejscu, aby móc go użyć do głosowania.", validationNo);
 
                     } else if (responseStatus == EVotingCommon.CLA_WRONG_DATA_RESP) {
                         String errorMessage = response.getData().get(0);
@@ -92,7 +89,8 @@ public class EVotingClient {
                         System.out.println("Nieznany błąd. Aplikacja nie działa poprawnie. Skontaktuj się z administratorem poprzez stronę " + votingSiteAddress);
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    System.out.println("Wystąpił błąd podczas łączenia się z serwerem. Może być on wyłączony, jeżeli odpowiednia faza wyborów się jeszcze nie zaczęła."
+                            + "W razie dalszych problemów, skontaktuj się z administratorem poprzez stronę: "+votingSiteAddress);
                 } finally {
                     try {
                         out.close();
@@ -122,18 +120,31 @@ public class EVotingClient {
                     response = (ResponseMessage) in.readObject();
                     if (response.getStatus() == EVotingCommon.CTF_CANDIDATES_RESP) {
                         data = response.getData();
+                        Map<Integer, String> candidates = new HashMap<>();
+                        for (String cand : data) {
+                            String[] candSplit = cand.split(":");
+                            candidates.put(Integer.parseInt(candSplit[0]), candSplit[1]);
+                        }
                         boolean voted = false;
                         while (!voted) {
                             System.out.println("Oto lista dostępnych kandydatów:");
-                            for (String pozycja: data) {
-                                System.out.println(pozycja);
+                            for (int number : candidates.keySet()) {
+                                System.out.println("opcja " + number + ": " + candidates.get(number));
                             }
                             System.out.print("Wybierz numer kandydata, na którego chcesz zagłosować: ");
-                            int candidate = keyboardScanner.nextInt();
-                            System.out.println("Chcesz zagłosować na kandydata nr " + candidate + ", czyli: " + data.get(candidate));
+                            int candidateNumber = keyboardScanner.nextInt();
+                            String candidateChosen = candidates.get(candidateNumber);
+                            if (candidateChosen == null) {
+                                System.out.println("Nie ma takiego kandydata. Oddasz głos nieważny.");
+                            } else {
+                                System.out.println("Chcesz zagłosować na kandydata " + candidateNumber + ": " + candidateChosen);
+                            }
                             System.out.print("Kontynuować? (t/n):");
                             String decision = keyboardScanner.next();
                             if (decision.equals("t")) {
+                                System.out.println("Podaj numer walidacyjny, który otrzymałeś w fazie zapisów do głosowania. Uważaj, żeby się nie pomylić!\n"
+                                        + "Podaj numer:");
+                                validationNo = keyboardScanner.next();
                                 voted = true;
                                 System.out.println("Teraz Twój głos zostanie wysłany do serwera.\nWysyłanie...");
                                 String identificationNo = null;
@@ -149,7 +160,7 @@ public class EVotingClient {
                                     data = new ArrayList<>();
                                     data.add(validationNo);
                                     data.add(identificationNo);
-                                    data.add(Integer.toString(candidate));
+                                    data.add(Integer.toString(candidateNumber));
                                     request.setData(data);
                                     out.writeObject(request);
                                     out.flush();
@@ -169,13 +180,16 @@ public class EVotingClient {
                                     System.out.println("Dziękujemy za skorzystanie z naszego systemu");
                                 } else {
                                 }
+                            }else {
+                                continue;
                             }
                         }
                     } else {
                         System.out.println("Nieprzewidziana wartość zwrócona z serwera. Skontaktuj się z administratorem poprzez stronę " + votingSiteAddress);
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    System.out.println("Wystąpił błąd podczas łączenia się z serwerem. Może być on wyłączony, jeżeli odpowiednia faza wyborów się jeszcze nie zaczęła."
+                            + "W razie dalszych problemów, skontaktuj się z administratorem poprzez stronę: "+votingSiteAddress);
                 } finally {
                     try {
                         out.close();

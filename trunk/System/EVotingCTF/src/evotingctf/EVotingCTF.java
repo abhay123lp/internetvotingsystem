@@ -3,14 +3,18 @@ package evotingctf;
 import evotingcommon.EVotingCommon;
 import evotingcommon.RequestMessage;
 import evotingcommon.ResponseMessage;
+import evotingcommon.ServerKiller;
 import java.io.BufferedReader;
+import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
+import java.net.SocketTimeoutException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -23,14 +27,10 @@ public class EVotingCTF extends Thread {
 
     private static CTFDataBase ctfdb;
 
-    public static void main(String[] args) throws SQLException, FileNotFoundException, ClassNotFoundException, IOException{
+    public static void main(String[] args) throws SQLException, FileNotFoundException, ClassNotFoundException, IOException {
 
-        //ŁADOWANIE DANYCH Z CLA - do zrobienia
         System.setProperty("javax.net.ssl.keyStore", EVotingCommon.SSLKeyAndCertStorageDir + "/CTFKeyStore");
         System.setProperty("javax.net.ssl.keyStorePassword", "123456");
-        
-        ServerSocketFactory socketFactory = SSLServerSocketFactory.getDefault();
-        ServerSocket serverSocket;
 
         //Administrator podczas startu decyduje czy utworzyc nowa baze danych - w domyslnej strukturze katalogow
         //Decyzja ta powinna byc oparta na tym czy baza juz istnieje czy jeszcze nie i musimy to zrobic
@@ -41,31 +41,47 @@ public class EVotingCTF extends Thread {
             System.out.println("Tworze baze danych ...");
             CTFDataBase.createDBOnDisk(EVotingCommon.CTFDBAddr, EVotingCommon.CTFCreatingScriptFileAddress, EVotingCommon.CTFDBUsername, EVotingCommon.CTFDBPassword);
             CTFDataBase.populate(EVotingCommon.CTFDBAddr, EVotingCommon.CTFPopulatingScriptFileAddress, EVotingCommon.CTFDBUsername, EVotingCommon.CTFDBPassword);
+            CTFDataBase.readValidationNumbersFile(EVotingCommon.CTFDBAddr, EVotingCommon.CLAToCTFUrnFile, EVotingCommon.CTFDBUsername, EVotingCommon.CTFDBPassword);
         } else {
             System.out.println("Nie tworze niczego.");
         }
-        System.out.println("Przechodze do nasluchu ...");
+
 
         try {
             ctfdb = new CTFDataBase(EVotingCommon.CTFDBAddr, EVotingCommon.CTFDBUsername, EVotingCommon.CTFDBPassword);
         } catch (InstantiationException | IllegalAccessException ex) {
             Logger.getLogger(EVotingCTF.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+
+        System.out.println("Przechodze do nasluchu ...");
+
+        ServerSocketFactory socketFactory = SSLServerSocketFactory.getDefault();
+        ServerSocket serverSocket;
         try {
             serverSocket = (SSLServerSocket) socketFactory.createServerSocket(EVotingCommon.CTFPortNumber);
+            serverSocket.setSoTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Błąd tworzenia gniazda. Napraw usterkę i uruchom system ponownie.");
             return;
         }
         System.out.println("Debug");
-        while (true) {
+        List<EVotingCTF> threads = new ArrayList<>();
+        ServerKiller killer = new ServerKiller();
+        killer.start();
+        while (killer.isAlive()) {
             try {
-                new EVotingCTF((SSLSocket) serverSocket.accept()).start();
+                EVotingCTF newThread = new EVotingCTF((SSLSocket) serverSocket.accept());
+                threads.add(newThread);
+                newThread.start();
+            } catch (SocketTimeoutException e) {
             } catch (IOException e) {
                 System.err.println("BŁĄD: Nieudane połączenie z klientem...\n");
             }
+
+        }
+        for (EVotingCTF t : threads) {
+            t.interrupt();
         }
     }
     private SSLSocket socket;
@@ -82,71 +98,72 @@ public class EVotingCTF extends Thread {
             inputStream = new ObjectInputStream(socket.getInputStream());
             outputStream = new ObjectOutputStream(socket.getOutputStream());
 
-            //do zaimplementowania!!!
-            RequestMessage request = (RequestMessage) inputStream.readObject();
-            if (request.getType() == EVotingCommon.CTF_CANDIDATES_REQ) {
-                ResponseMessage response = new ResponseMessage();
-                response.setStatus(EVotingCommon.CTF_CANDIDATES_RESP);
-                List<String> candidates = ctfdb.getCandidates();
-                response.setData(candidates);
-                outputStream.writeObject(response);
-                outputStream.flush();
-            } else if (request.getType() == EVotingCommon.CTF_VOTE_REQ) {
-                List<String> data = request.getData();
-                /*//to jest chyba zle - popatrz na odpowiednia czesc klienta
-                String identificationNo = data.get(0),
-                        validationNo = data.get(1);
-                */
-                
-                String validationNo = data.get(0), identificationNo = data.get(1), candidateNo = data.get(2);
-                int candidate = 0;
-                try {
-                    candidate = Integer.parseInt(candidateNo);
-                } catch (NumberFormatException e) {
-                    candidate = -1;
-                    /*
-                    System.err.println("BŁĄD: numer kandydata nie jest poprawną liczbą!");
+            boolean end = false;
+            while (!end && !isInterrupted()) {
+                RequestMessage request = (RequestMessage) inputStream.readObject();
+                if (request.getType() == EVotingCommon.CTF_CANDIDATES_REQ) {
                     ResponseMessage response = new ResponseMessage();
-                    response.setStatus(EVotingCommon.CTF_WRONG_DATA_RESP);//a bedzie czekal na kolejna wiadomosc wyslana pare linijek nizej? - rozsynchronizuje sie
-                    response.setData(null);
+                    response.setStatus(EVotingCommon.CTF_CANDIDATES_RESP);
+                    List<String> candidates = ctfdb.getCandidates();
+                    response.setData(candidates);
                     outputStream.writeObject(response);
                     outputStream.flush();
-                    * 
-                    */
-                }
-                
-                boolean validationCorrect = ctfdb.checkValidationCorrect(validationNo),
-                        alreadyVoted = ctfdb.checkValidationUsed(validationNo),
-                        idUsed = ctfdb.checkIdentificationUsed(identificationNo);
+                } else if (request.getType() == EVotingCommon.CTF_VOTE_REQ) {
+                    List<String> data = request.getData();
 
-                System.out.println("Numer walidacyjny jest ok: " + validationCorrect + ". Uzytkownik juz glosowal: " + alreadyVoted + ". Numer identyfikacyjny jest juz zajety: " + idUsed);
-                
-                ResponseMessage response = new ResponseMessage();
-                response.setData(null);
+                    String validationNo = data.get(0), identificationNo = data.get(1), candidateNo = data.get(2);
+                    int candidate = 0;
+                    try {
+                        candidate = Integer.parseInt(candidateNo);
+                    } catch (NumberFormatException e) {
+                        candidate = -1;
+                        /*
+                        System.err.println("BŁĄD: numer kandydata nie jest poprawną liczbą!");
+                        ResponseMessage response = new ResponseMessage();
+                        response.setStatus(EVotingCommon.CTF_WRONG_DATA_RESP);//a bedzie czekal na kolejna wiadomosc wyslana pare linijek nizej? - rozsynchronizuje sie
+                        response.setData(null);
+                        outputStream.writeObject(response);
+                        outputStream.flush();
+                         *
+                         */
+                    }
 
-                if (validationCorrect) {
-                    if (!alreadyVoted) {
-                        if (!idUsed) {
-                            ctfdb.markValidationUsed(validationNo);
-                            ctfdb.addVote(identificationNo, candidate);
-                            response.setStatus(EVotingCommon.CTF_OK_RESP);
-                            System.out.println("Glos zostal oddany.");
+                    boolean validationCorrect = ctfdb.checkValidationCorrect(validationNo),
+                            alreadyVoted = ctfdb.checkValidationUsed(validationNo),
+                            idUsed = ctfdb.checkIdentificationUsed(identificationNo);
+
+                    System.out.println("Numer walidacyjny jest ok: " + validationCorrect + ". Uzytkownik juz glosowal: " + alreadyVoted + ". Numer identyfikacyjny jest juz zajety: " + idUsed);
+
+                    ResponseMessage response = new ResponseMessage();
+                    response.setData(null);
+
+                    if (validationCorrect) {
+                        if (!alreadyVoted) {
+                            if (!idUsed) {
+                                ctfdb.markValidationUsed(validationNo);
+                                ctfdb.addVote(identificationNo, candidate);
+                                response.setStatus(EVotingCommon.CTF_OK_RESP);
+                                System.out.println("Glos zostal oddany.");
+                                end=true;
+                            } else {
+                                response.setStatus(EVotingCommon.CTF_ID_USED_RESP);
+                                System.out.println("Numer identyfikacyjny jest juz zajety.");
+                            }
                         } else {
-                            response.setStatus(EVotingCommon.CTF_ID_USED_RESP);
-                            System.out.println("Numer identyfikacyjny jest juz zajety.");
+                            response.setStatus(EVotingCommon.CTF_VALIDATION_USED_RESP);
+                            System.out.println("Uzytkownik o tym numerze walidacyjnym juz glosowal.");
                         }
                     } else {
-                        response.setStatus(EVotingCommon.CTF_VALIDATION_USED_RESP);
-                            System.out.println("Uzytkownik o tym numerze walidacyjnym juz glosowal.");
+                        response.setStatus(EVotingCommon.CTF_VALIDATION_INCORRECT_RESP);
                     }
+                    outputStream.writeObject(response);
+                    outputStream.flush();
                 } else {
-                    response.setStatus(EVotingCommon.CTF_VALIDATION_INCORRECT_RESP);
                 }
-                outputStream.writeObject(response);
-                outputStream.flush();
-            } else {
-            }
 
+            }
+        } catch (EOFException e) {
+            System.out.println("Użytkownik się rozłączył.");
         } catch (Exception e) {
             e.printStackTrace();
             ResponseMessage response = new ResponseMessage();
@@ -160,9 +177,15 @@ public class EVotingCTF extends Thread {
                 System.err.println("BŁĄD: Niedziałające połączenie - nie udało się wysłać klientowi wiadomości o wyjątku po stronie serwera...");
                 System.err.println("Błąd wystąpił przy połączeniu z klientem - IP: " + socket.getInetAddress() + " port: " + socket.getPort());
             }
-            //UWAGA!!!!
-            //ta klauzula przygotowuje sobie response ale go nie wysyla !!! Poza tym trzeba by 
-            //sprawdzic czy nie wyslano odp przed rzuceniem wyjatku bo wtedy doszloby do rozsynchronizowania komunikacji
+        } finally {
+            try {
+                outputStream.close();
+            } catch (Exception e) {
+            }
+            try {
+                inputStream.close();
+            } catch (Exception e) {
+            }
         }
     }
 }
