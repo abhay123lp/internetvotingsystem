@@ -6,6 +6,7 @@ import evotingcommon.ResponseMessage;
 import evotingcommon.ServerKiller;
 import java.io.*;
 import java.net.ServerSocket;
+import java.net.SocketTimeoutException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -71,6 +72,7 @@ public class EVotingCLA extends Thread {
         while (killer.isAlive()) {
             try {
                 new EVotingCLA((SSLSocket) serverSocket.accept()).start();
+            } catch (SocketTimeoutException e) {
             } catch (IOException e) {
                 System.err.println("BŁĄD: Nieudane połączenie z klientem...\n");
             }
