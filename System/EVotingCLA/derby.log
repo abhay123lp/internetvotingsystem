@@ -1,10 +1,10 @@
 ----------------------------------------------------------------
-Fri Jan 18 19:29:48 CET 2013:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.9.1.0 - (1344872): instance a816c00e-013c-4eec-809d-000003573ec0 
-on database directory C:\Users\Tomek\Desktop\Internet Voting System\System\CLADB\CLADB  with class loader sun.misc.Launcher$AppClassLoader@224577f9 
-Loaded from file:/C:/Users/Tomek/Desktop/Internet%20Voting%20System/System/db-derby-10.9.1.0-bin/lib/derby.jar
+Sat Jan 19 21:11:05 CET 2013:
+ Uruchamianie wersji The Apache Software Foundation - Apache Derby - 10.9.1.0 - (1344872) systemu Derby: instancja a816c00e-013c-546f-9923-0000035f12c0
+w katalogu bazy danych C:\Users\Maciek\Desktop\voting\System\CLADB\CLADB  sun.misc.Launcher$AppClassLoader@6040f3c1 
+
 java.vendor=Oracle Corporation
-java.runtime.version=1.7.0_11-b21
-user.dir=C:\Users\Tomek\Desktop\Internet Voting System\System\EVotingCLA
+java.runtime.version=1.7.0_02-b13
+user.dir=C:\Users\Maciek\Desktop\voting\System\EVotingCLA
 derby.system.home=null
-Database Class Loader started - derby.database.classpath=''
+Uruchomiono program ładujący klasę bazy danych - derby.database.classpath=''

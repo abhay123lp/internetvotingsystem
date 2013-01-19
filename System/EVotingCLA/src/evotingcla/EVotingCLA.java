@@ -3,6 +3,7 @@ package evotingcla;
 import evotingcommon.EVotingCommon;
 import evotingcommon.RequestMessage;
 import evotingcommon.ResponseMessage;
+import evotingcommon.ServerKiller;
 import java.io.*;
 import java.net.ServerSocket;
 import java.sql.SQLException;
@@ -26,8 +27,7 @@ public class EVotingCLA extends Thread {
         System.setProperty("javax.net.ssl.keyStore", EVotingCommon.SSLKeyAndCertStorageDir + "/CLAKeyStore");
         System.setProperty("javax.net.ssl.keyStorePassword", "123456");
 
-        ServerSocketFactory socketFactory = SSLServerSocketFactory.getDefault();
-        ServerSocket serverSocket;
+
 
         //Administrator podczas startu decyduje czy utworzyc nowa baze danych - w domyslnej strukturze katalogow
         //Decyzja ta powinna byc oparta na tym czy baza juz istnieje czy jeszcze nie i musimy to zrobic
@@ -49,7 +49,53 @@ public class EVotingCLA extends Thread {
         }
 
         if (line.equals("zrzuc")) {
+            writeURNsToFile(cladb);
+            return;
+        }
+
+        System.out.println("Przechodze do nasluchu ...");
+
+        ServerSocketFactory socketFactory = SSLServerSocketFactory.getDefault();
+        ServerSocket serverSocket;
+        try {
+            serverSocket = (SSLServerSocket) socketFactory.createServerSocket(EVotingCommon.CLAPortNumber);
+            serverSocket.setSoTimeout(10000);
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Błąd tworzenia gniazda. Napraw usterkę i uruchom system ponownie.");
+            return;
+        }
+        List<EVotingCLA> threads = new ArrayList<>();
+        ServerKiller killer = new ServerKiller();
+        killer.start();
+        while (killer.isAlive()) {
+            try {
+                new EVotingCLA((SSLSocket) serverSocket.accept()).start();
+            } catch (IOException e) {
+                System.err.println("BŁĄD: Nieudane połączenie z klientem...\n");
+            }
+        }
+        for (EVotingCLA t : threads) {
+            t.interrupt();
+        }
+        System.out.println("Zanim sobie pójdziesz: czy chcesz zrzucić poprawne numery walidacyjne do pliku?\n"
+                + "Wprowadź swój wybór (t/n):");
+        String decision = br.readLine();
+        if (decision.equalsIgnoreCase("t")) {
+            writeURNsToFile(cladb);
+        }
+
+    }
+    private SSLSocket socket;
+
+    public EVotingCLA(SSLSocket socket) {
+        this.socket = socket;
+    }
+
+    public static void writeURNsToFile(CLADataBase cladb) {
+        try {
             List<String> urns = cladb.registeredUsersUrns();
+
             PrintWriter pw = null;
             try {
                 pw = new PrintWriter(new BufferedWriter(new FileWriter(EVotingCommon.CLAToCTFUrnFile)));
@@ -60,31 +106,10 @@ public class EVotingCLA extends Thread {
                 pw.flush();
                 pw.close();
             }
-            System.exit(0);
+        } catch (Exception e) {
+            System.err.println("Uwaga! Problem z zapisem numerów walidacyjnych do pliku! Numery walidacyjne są zapisane w bazie danych. "
+                    + "\nSpróbuj naprawić problem lub pobrać je ręcznie z bazy danych.");
         }
-
-        System.out.println("Przechodze do nasluchu ...");
-
-        try {
-            serverSocket = (SSLServerSocket) socketFactory.createServerSocket(EVotingCommon.CLAPortNumber);
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("Błąd tworzenia gniazda. Napraw usterkę i uruchom system ponownie.");
-            return;
-        }
-        System.out.println("Debug");
-        while (true) {
-            try {
-                new EVotingCLA((SSLSocket) serverSocket.accept()).start();
-            } catch (IOException e) {
-                System.err.println("BŁĄD: Nieudane połączenie z klientem...\n");
-            }
-        }
-    }
-    private SSLSocket socket;
-
-    public EVotingCLA(SSLSocket socket) {
-        this.socket = socket;
     }
 
     public void run() {
@@ -95,36 +120,40 @@ public class EVotingCLA extends Thread {
             inputStream = new ObjectInputStream(socket.getInputStream());
             outputStream = new ObjectOutputStream(socket.getOutputStream());
 
-            //do zaimplementowania!!!
-            RequestMessage request = (RequestMessage) inputStream.readObject();
-            if (request.getType() != EVotingCommon.CLA_VALIDATION_REQ) {
-                System.out.println("Powinienem otrzymac cla_validation_req - sprawdz to");
-            }
-            String pesel = request.getData().get(0);
-            String password = request.getData().get(1);
-            ResponseMessage response = new ResponseMessage();
-            List<String> data = new ArrayList<>();
-            response.setData(data);
-            //dowiedzmy sie dwoch rzeczy - czy te dane sa poprawne i czy wyborca odebral juz swoj nr
-            boolean registered = cladb.userAlreadyRegistered(pesel);
-            boolean matching = cladb.usernameMatchesPassword(pesel, password);
-            System.out.println("registered: " + registered + " matching: " + matching);
-            if (!registered && matching) {
-                response.setStatus(EVotingCommon.CLA_OK_RESP);
-                Random rnd = new Random();
-                String validationNo = Long.toString(Math.abs(rnd.nextLong()));
-                while (cladb.URNAlreadyExists(validationNo)) {
-                    System.out.println("Unfortunately the number alredy exists.");
-                    validationNo = Long.toString(Math.abs(rnd.nextLong()));
+            boolean end = false;
+            while (!end && !isInterrupted()) {
+                RequestMessage request = (RequestMessage) inputStream.readObject();
+                if (request.getType() != EVotingCommon.CLA_VALIDATION_REQ) {
+                    System.out.println("Powinienem otrzymac cla_validation_req - sprawdz to");
                 }
-                cladb.alterVoter(pesel, validationNo);
-                response.getData().add(validationNo);
-            } else {
-                response.setStatus(EVotingCommon.CLA_WRONG_DATA_RESP);
-                response.getData().add("Hasło jest poprawne: " + matching + ". Uztkownik ma juz swoj nr walidacyjny:" + registered);
+                String pesel = request.getData().get(0);
+                String password = request.getData().get(1);
+                ResponseMessage response = new ResponseMessage();
+                List<String> data = new ArrayList<>();
+                response.setData(data);
+                //dowiedzmy sie dwoch rzeczy - czy te dane sa poprawne i czy wyborca odebral juz swoj nr
+                boolean registered = cladb.userAlreadyRegistered(pesel);
+                boolean matching = cladb.usernameMatchesPassword(pesel, password);
+                System.out.println("registered: " + registered + " matching: " + matching);
+                if (!registered && matching) {
+                    response.setStatus(EVotingCommon.CLA_OK_RESP);
+                    Random rnd = new Random();
+                    String validationNo = Long.toString(Math.abs(rnd.nextLong()));
+                    while (cladb.URNAlreadyExists(validationNo)) {
+                        System.out.println("Unfortunately the number alredy exists.");
+                        validationNo = Long.toString(Math.abs(rnd.nextLong()));
+                    }
+                    cladb.alterVoter(pesel, validationNo);
+                    response.getData().add(validationNo);
+                } else {
+                    response.setStatus(EVotingCommon.CLA_WRONG_DATA_RESP);
+                    response.getData().add("Hasło jest poprawne: " + matching + ". Użytkownik ma juz swoj nr walidacyjny:" + registered);
+                }
+                outputStream.writeObject(response);
+                outputStream.flush();
             }
-            outputStream.writeObject(response);
-            outputStream.flush();
+        } catch (EOFException e) {
+            System.out.println("Użytkownik się rozłączył");
         } catch (Exception e) {
             e.printStackTrace();
             ResponseMessage response = new ResponseMessage();
@@ -141,6 +170,15 @@ public class EVotingCLA extends Thread {
             //UWAGA!!!!
             //ta klauzula przygotowuje sobie response ale go nie wysyla !!! Poza tym trzeba by 
             //sprawdzic czy nie wyslano odp przed rzuceniem wyjatku bo wtedy doszloby do rozsynchronizowania komunikacji
+        } finally {
+            try {
+                outputStream.close();
+            } catch (Exception e) {
+            }
+            try {
+                inputStream.close();
+            } catch (Exception e) {
+            }
         }
     }
 }
