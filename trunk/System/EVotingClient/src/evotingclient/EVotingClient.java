@@ -125,9 +125,8 @@ public class EVotingClient {
                         boolean voted = false;
                         while (!voted) {
                             System.out.println("Oto lista dostępnych kandydatów:");
-                            int n=data.size();
-                            for (int i = 0; i < n; i++) {
-                                System.out.println("Kandydat nr " + i + ": " + data.get(i));
+                            for (String pozycja: data) {
+                                System.out.println(pozycja);
                             }
                             System.out.print("Wybierz numer kandydata, na którego chcesz zagłosować: ");
                             int candidate = keyboardScanner.nextInt();
