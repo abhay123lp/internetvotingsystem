@@ -96,18 +96,18 @@ public class EVotingCTF extends Thread {
         int illegalVotes = ctfdb.getNumberOfIllegalVotes();
         Map<String, Integer> results = ctfdb.getResults();
         html.append("<p>Oddano głosów: ").append(allVotes).append(", w tym nieważnych: ").append(illegalVotes).append("</p>\n");
-        html.append("<h2>Lista kandydatów wraz z wynikami:</h2>\n<ol>\n");
-        for (String key : candidates.keySet()) {
+        html.append("<h2>Lista kandydatów wraz z wynikami:</h2>\n<ul>\n");
+        for (String cNumber : candidates.keySet()) {
 
-            html.append("<li>").append(candidates.get(key)).append(": ").append(100.0 * (results.get(key) == null ? 0 : results.get(key)) / (allVotes==0?1:allVotes)).append("%</li>\n");
+            html.append("<li>kandydat nr ").append(cNumber).append(" - ").append(candidates.get(cNumber)).append(": ").append(100.0 * (results.get(cNumber) == null ? 0 : results.get(cNumber)) / (allVotes==0?1:allVotes)).append("%</li>\n");
         }
-        html.append("</ol>\n");
+        html.append("</ul>\n");
         html.append("<h2>Lista kandydatów wraz z listami głosów:</h2>\n<ul>\n");
         for (String cNumber : candidates.keySet()) {
             String cName = candidates.get(cNumber);
 
             List<String> ids = ctfdb.getVotesForCandidate(cNumber);
-            html.append("<li>").append(cName).append(": ").append("\n<ol>\n");
+            html.append("<li>kandydat nr ").append(cNumber).append(" - ").append(cName).append(": ").append("\n<ol>\n");
             for (String id : ids) {
                 html.append("<li>").append(id).append("</li>\n");
             }
