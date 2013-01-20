@@ -6,8 +6,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
 
@@ -91,7 +92,7 @@ public class CTFDataBase {
         }
     }
 
-    public static void readValidationNumbersFile(String dbAddress, String validationFileAddress, String username, String password) throws ClassNotFoundException,SQLException{
+    public static void readValidationNumbersFile(String dbAddress, String validationFileAddress, String username, String password) throws ClassNotFoundException, SQLException {
         File file = null;
         Scanner sc = null;
         try {
@@ -101,12 +102,12 @@ public class CTFDataBase {
             System.out.println("Nie znaleziono podanego pliku. Nie wczytuję danych dotyczących numerów walidacyjnych!");
             return;
         }
-        List<String> urns= new ArrayList<>();
+        List<String> urns = new ArrayList<>();
         while (sc.hasNext()) {
             urns.add(sc.next());
         }
         sc.close();
-        
+
         String connAddr = "jdbc:derby:" + dbAddress;
         Connection connection = null;
         Class.forName(driverClassName);
@@ -118,9 +119,9 @@ public class CTFDataBase {
         Statement stmt = connection.createStatement();
         StringBuilder insert = new StringBuilder("INSERT INTO validList (urn,used) VALUES ");
         int urnsSize = urns.size();
-        for(int i=0;i<urnsSize;i++){
+        for (int i = 0; i < urnsSize; i++) {
             insert.append("('").append(urns.get(i)).append("', 0)");
-            if(i<urnsSize-1){
+            if (i < urnsSize - 1) {
                 insert.append(",\n");
             }
         }
@@ -129,21 +130,21 @@ public class CTFDataBase {
         stmt.executeUpdate(insert.toString());
     }
 
-    public List<String> getCandidates() throws SQLException {
+    public Map<String, String> getCandidates() throws SQLException {
         Statement stmt = connection.createStatement();
         String SQLQuery = "SELECT * FROM candidates";
         ResultSet rs = stmt.executeQuery(SQLQuery);
-        List<String> candidates = new ArrayList<>();
+        Map<String, String> candidates = new HashMap<>();
         while (rs.next()) {
             String c_id = rs.getString("c_id"), name = rs.getString("first_name"), surname = rs.getString("last_name");
-            candidates.add(c_id + ": " + name + " " + surname);
+            candidates.put(c_id, name + " " + surname);
         }
         return candidates;
     }
 
     public boolean checkValidationCorrect(String validationNo) throws SQLException {
         Statement stmt = connection.createStatement();
-        String SQLQuery = "SELECT * FROM validList WHERE urn='" + validationNo+"'";
+        String SQLQuery = "SELECT * FROM validList WHERE urn='" + validationNo + "'";
         ResultSet rs = stmt.executeQuery(SQLQuery);
         if (rs.next()) {
             return true;
@@ -154,7 +155,7 @@ public class CTFDataBase {
 
     public boolean checkValidationUsed(String validationNo) throws SQLException, Exception {
         Statement stmt = connection.createStatement();
-        String SQLQuery = "SELECT * FROM validList WHERE urn='" + validationNo+"'";
+        String SQLQuery = "SELECT * FROM validList WHERE urn='" + validationNo + "'";
         ResultSet rs = stmt.executeQuery(SQLQuery);
 
         if (rs.next()) {
@@ -172,13 +173,13 @@ public class CTFDataBase {
 
     public void markValidationUsed(String validationNo) throws SQLException {
         Statement stmt = connection.createStatement();
-        String SQLUpdateQuery = "UPDATE validList SET used=1 WHERE urn='" + validationNo+"'";
+        String SQLUpdateQuery = "UPDATE validList SET used=1 WHERE urn='" + validationNo + "'";
         stmt.executeUpdate(SQLUpdateQuery);
     }
 
     public boolean checkIdentificationUsed(String identificationNo) throws SQLException {
         Statement stmt = connection.createStatement();
-        String SQLQuery = "SELECT * FROM votes WHERE id='" + identificationNo+"'";
+        String SQLQuery = "SELECT * FROM votes WHERE id='" + identificationNo + "'";
         ResultSet rs = stmt.executeQuery(SQLQuery);
 
         if (rs.next()) {
@@ -192,5 +193,48 @@ public class CTFDataBase {
         Statement stmt = connection.createStatement();
         String SQLInsertQuery = "INSERT INTO votes (id,vote) VALUES ('" + identificationNo + "', " + candidate + ")";
         stmt.executeUpdate(SQLInsertQuery);
+    }
+
+    public List<String> getVotesForCandidate(String candidateNumber) throws SQLException {
+        Statement stmt = connection.createStatement();
+        String SQLQuery = "SELECT id FROM votes WHERE vote=" + candidateNumber;
+        ResultSet rs = stmt.executeQuery(SQLQuery);
+        List<String> votes = new ArrayList<>();
+        while (rs.next()) {
+            String id = rs.getString("id");
+            votes.add(id);
+        }
+        return votes;
+    }
+
+    public int getNumberOfVotes() throws SQLException {
+
+        Statement stmt = connection.createStatement();
+        String SQLQuery = "SELECT COUNT(*) FROM votes";
+        ResultSet rs = stmt.executeQuery(SQLQuery);
+        rs.next();
+        return rs.getInt(1);
+    }
+
+    public int getNumberOfIllegalVotes() throws SQLException {
+
+        Statement stmt = connection.createStatement();
+        String SQLQuery = "SELECT COUNT(*) FROM votes WHERE vote NOT IN (SELECT c_id FROM candidates)";
+        ResultSet rs = stmt.executeQuery(SQLQuery);
+        rs.next();
+        return rs.getInt(1);
+    }
+
+    public Map<String, Integer> getResults() throws SQLException {
+        Statement stmt = connection.createStatement();
+        String SQLQuery = "SELECT vote, COUNT(*) AS result FROM votes WHERE vote IN (SELECT c_id FROM candidates) GROUP BY vote ORDER BY result";
+        ResultSet rs = stmt.executeQuery(SQLQuery);
+        Map<String, Integer> results = new HashMap<>();
+        while (rs.next()) {
+            String c_id = new Integer(rs.getInt("vote")).toString();
+            int result = rs.getInt("result");
+            results.put(c_id, result);
+        }
+        return results;
     }
 }

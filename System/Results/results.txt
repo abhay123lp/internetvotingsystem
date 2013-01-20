@@ -1,0 +1,39 @@
+<h1>Wyniki wyborów</h1>
+<p>Oddano głosów: 1, w tym nieważnych: 0</p>
+<h2>Lista kandydatów wraz z wynikami:</h2>
+<ol>
+<li>Jozin z Bazin: 0.0%</li>
+<li>Zdenek Miller: 0.0%</li>
+<li>Koziolek Matolek: 1.0%</li>
+<li>Mamusia Muminka: 0.0%</li>
+<li>Zawisza Czarny: 0.0%</li>
+<li>Zielona Latarnia: 0.0%</li>
+</ol>
+<h2>Lista kandydatów wraz z listami głosów:</h2>
+<ul>
+<li>Jozin z Bazin: 
+<ol>
+</ol>
+</li>
+<br/><li>Zdenek Miller: 
+<ol>
+</ol>
+</li>
+<br/><li>Koziolek Matolek: 
+<ol>
+<li>3186132582780282987</li>
+</ol>
+</li>
+<br/><li>Mamusia Muminka: 
+<ol>
+</ol>
+</li>
+<br/><li>Zawisza Czarny: 
+<ol>
+</ol>
+</li>
+<br/><li>Zielona Latarnia: 
+<ol>
+</ol>
+</li>
+<br/></ul>

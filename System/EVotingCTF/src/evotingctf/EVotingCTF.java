@@ -5,8 +5,11 @@ import evotingcommon.RequestMessage;
 import evotingcommon.ResponseMessage;
 import evotingcommon.ServerKiller;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.EOFException;
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
@@ -16,6 +19,7 @@ import java.net.SocketTimeoutException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ServerSocketFactory;
@@ -83,6 +87,39 @@ public class EVotingCTF extends Thread {
         for (EVotingCTF t : threads) {
             t.interrupt();
         }
+
+        System.out.println("Zostanie sporządzona lista głosów oddanych na poszczególnych kandydatów i zapisana do pliku w formacie html.");
+        Map<String, String> candidates = ctfdb.getCandidates();
+        int n = candidates.size();
+        StringBuilder html = new StringBuilder("<h1>Wyniki wyborów</h1>\n");
+        int allVotes = ctfdb.getNumberOfVotes();
+        int illegalVotes = ctfdb.getNumberOfIllegalVotes();
+        Map<String, Integer> results = ctfdb.getResults();
+        html.append("<p>Oddano głosów: ").append(allVotes).append(", w tym nieważnych: ").append(illegalVotes).append("</p>\n");
+        html.append("<h2>Lista kandydatów wraz z wynikami:</h2>\n<ol>\n");
+        for (String key : candidates.keySet()) {
+
+            html.append("<li>").append(candidates.get(key)).append(": ").append(100.0 * (results.get(key) == null ? 0 : results.get(key)) / (allVotes==0?1:allVotes)).append("%</li>\n");
+        }
+        html.append("</ol>\n");
+        html.append("<h2>Lista kandydatów wraz z listami głosów:</h2>\n<ul>\n");
+        for (String cNumber : candidates.keySet()) {
+            String cName = candidates.get(cNumber);
+
+            List<String> ids = ctfdb.getVotesForCandidate(cNumber);
+            html.append("<li>").append(cName).append(": ").append("\n<ol>\n");
+            for (String id : ids) {
+                html.append("<li>").append(id).append("</li>\n");
+            }
+            html.append("</ol>\n</li>\n<br/>");
+        }
+        html.append("</ul>\n").append("");
+        String resultHTML = html.toString();
+        File file = new File(EVotingCommon.resultsHTMLAddress);
+        try (BufferedWriter out = new BufferedWriter(new FileWriter(file))) {
+            out.write(resultHTML);
+            out.flush();
+        }
     }
     private SSLSocket socket;
 
@@ -104,8 +141,12 @@ public class EVotingCTF extends Thread {
                 if (request.getType() == EVotingCommon.CTF_CANDIDATES_REQ) {
                     ResponseMessage response = new ResponseMessage();
                     response.setStatus(EVotingCommon.CTF_CANDIDATES_RESP);
-                    List<String> candidates = ctfdb.getCandidates();
-                    response.setData(candidates);
+                    Map<String, String> candidates = ctfdb.getCandidates();
+                    List<String> responseData = new ArrayList<>();
+                    for (String key : candidates.keySet()) {
+                        responseData.add(key + ": " + candidates.get(key));
+                    }
+                    response.setData(responseData);
                     outputStream.writeObject(response);
                     outputStream.flush();
                 } else if (request.getType() == EVotingCommon.CTF_VOTE_REQ) {
@@ -144,7 +185,7 @@ public class EVotingCTF extends Thread {
                                 ctfdb.addVote(identificationNo, candidate);
                                 response.setStatus(EVotingCommon.CTF_OK_RESP);
                                 System.out.println("Glos zostal oddany.");
-                                end=true;
+                                end = true;
                             } else {
                                 response.setStatus(EVotingCommon.CTF_ID_USED_RESP);
                                 System.out.println("Numer identyfikacyjny jest juz zajety.");
