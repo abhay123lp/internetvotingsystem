@@ -102,7 +102,7 @@ public class EVotingCTF extends Thread {
             html.append("<li>kandydat nr ").append(cNumber).append(" - ").append(candidates.get(cNumber)).append(": ").append(100.0 * (results.get(cNumber) == null ? 0 : results.get(cNumber)) / (allVotes==0?1:allVotes)).append("%</li>\n");
         }
         html.append("</ul>\n");
-        html.append("<h2>Lista kandydatów wraz z listami głosów:</h2>\n<ul>\n");
+        html.append("<h2>Lista kandydatów wraz z głosami:</h2>\n<ul>\n");
         for (String cNumber : candidates.keySet()) {
             String cName = candidates.get(cNumber);
 
