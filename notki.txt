@@ -1,6 +1,0 @@
-d³u¿szy numer walidacyjny?
-z³y komunikat - powtórzone ¿¹danie walidacji
-powtórzone ¿¹danie walidacji - przypominaæ, nie zwracaæ b³¹d!
-klucze g³ówne w CLA?
-przenoszenie danych z CLA na CTF?
-wyj¹tki w CTF
