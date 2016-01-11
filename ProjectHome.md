@@ -1,0 +1,2 @@
+An E-voting system started as a form of crediting "the safety of computer systems". Repository consists of two parts:
+1) e-voting system tutorial which covers basic ideas and is intended for both regular voters as well as programmers interested in the subject. This part is in polish so we apologise if it is not of any use for you. 2) The example implementation (Java).
